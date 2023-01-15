@@ -1,42 +1,76 @@
+BitCoin v0.1.5 ALPHA
 
-Bitcoin integration/staging tree
+Copyright (c) 2009 Satoshi Nakamoto
+Distributed under the MIT/X11 software license, see the accompanying
+file license.txt or http://www.opensource.org/licenses/mit-license.php.
+This product includes software developed by the OpenSSL Project for use in
+the OpenSSL Toolkit (http://www.openssl.org/).  This product includes
+cryptographic software written by Eric Young (eay@cryptsoft.com).
 
-Development process
-===================
 
-Developers work in their own trees, then submit pull requests when
-they think their feature or bug fix is ready.
+Compilers Supported
+-------------------
+MinGW GCC (v3.4.5)
+Microsoft Visual C++ 6.0 SP6
 
-If it is a simple/trivial/non-controversial change, then one of the
-bitcoin development team members simply pulls it.
 
-If it is a more complicated or potentially controversial
-change, then the patch submitter will be asked to start a
-discussion (if they haven't already) on the mailing list:
-http://sourceforge.net/mailarchive/forum.php?forum_name=bitcoin-development
+Dependencies
+------------
+Libraries you need to obtain separately to build:
 
-The patch will be accepted if there is broad consensus that it is a
-good thing.  Developers should expect to rework and resubmit patches
-if they don't match the project's coding conventions (see coding.txt)
-or are controversial.
+              default path   download
+wxWidgets      \wxWidgets     http://www.wxwidgets.org/downloads/
+OpenSSL        \OpenSSL       http://www.openssl.org/source/
+Berkeley DB    \DB            http://www.oracle.com/technology/software/products/berkeley-db/index.html
+Boost          \Boost         http://www.boost.org/users/download/
 
-The master branch is regularly built and tested, but is not guaranteed
-to be completely stable. Tags are regularly created to indicate new
-official, stable release versions of Bitcoin. If you would like to
-help test the Bitcoin core, please contact QA@BitcoinTesting.org.
+Their licenses:
+wxWidgets      LGPL 2.1 with very liberal exceptions
+OpenSSL        Old BSD license with the problematic advertising requirement
+Berkeley DB    New BSD license with additional requirement that linked software must be free open source
+Boost          MIT-like license
 
-Feature branches are created when there are major new features being
-worked on by several people.
 
-From time to time a pull request will become outdated. If this occurs, and
-the pull is no longer automatically mergeable; a comment on the pull will
-be used to issue a warning of closure. The pull will be closed 15 days
-after the warning if action is not taken by the author. Pull requests closed
-in this manner will have their corresponding issue labeled 'stagnant'.
+OpenSSL
+-------
+Bitcoin does not use any encryption.  If you want to do a no-everything
+build of OpenSSL to exclude encryption routines, a few patches are required.
+(OpenSSL v0.9.8h)
 
-Issues with no commits will be given a similar warning, and closed after
-15 days from their last activity. Issues closed in this manner will be 
-labeled 'stale'. 
+Edit engines\e_gmp.c and put this #ifndef around #include <openssl/rsa.h>
+  #ifndef OPENSSL_NO_RSA
+  #include <openssl/rsa.h>
+  #endif
 
-Requests to reopen closed pull requests and/or issues can be submitted to 
-QA@BitcoinTesting.org. 
+Add this to crypto\err\err_all.c before the ERR_load_crypto_strings line:
+  void ERR_load_RSA_strings(void) { }
+
+Edit ms\mingw32.bat and replace the Configure line's parameters with this
+no-everything list.  You have to put this in the batch file because batch
+files can't handle more than 9 parameters.
+  perl Configure mingw threads no-rc2 no-rc4 no-rc5 no-idea no-des no-bf no-cast no-aes no-camellia no-seed no-rsa no-dh
+
+Also REM out the following line in ms\mingw32.bat.  The build fails after it's
+already finished building libeay32, which is all we care about, but the
+failure aborts the script before it runs dllwrap to generate libeay32.dll.
+  REM  if errorlevel 1 goto end
+
+Build
+  ms\mingw32.bat
+
+If you want to use it with MSVC, generate the .lib file
+  lib /machine:i386 /def:ms\libeay32.def /out:out\libeay32.lib
+
+
+Berkeley DB
+-----------
+MinGW with MSYS:
+cd \DB\build_unix
+sh ../dist/configure --enable-mingw --enable-cxx
+make
+
+
+Boost
+-----
+You may need Boost version 1.35 to build with MSVC 6.0.  I couldn't get
+version 1.37 to compile with MSVC 6.0.
